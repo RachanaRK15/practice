@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{--navy:#12304a;--teal:#0e9f9a;--bg:#f3f6fa;--text:#182230;--muted:#64748b}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--text)}
+    .wrap{max-width:600px;margin:24px auto;padding:16px}.brand{background:linear-gradient(135deg,var(--navy),#205b76);color:white;padding:24px;border-radius:18px 18px 0 0}
+    .brand h1{font-size:22px;margin:0 0 8px}.brand p{margin:0;color:#dce8ef;font-size:14px}
+    .card{background:white;padding:22px;border-radius:0 0 18px 18px;box-shadow:0 8px 28px #16324f12}
+    .tabs{display:flex;gap:8px;margin-bottom:20px}.tab{flex:1;padding:12px;border:1px solid #d8e1ea;background:white;border-radius:10px;font-weight:bold;cursor:pointer}
+    .tab.active{background:var(--navy);color:white;border-color:var(--navy)}label{display:block;font-size:13px;font-weight:bold;margin:14px 0 6px}
+    input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit}textarea{min-height:80px;resize:vertical}
+    button.primary{width:100%;margin-top:18px;padding:13px;border:0;border-radius:10px;background:var(--teal);color:white;font-size:15px;font-weight:bold;cursor:pointer}
+    button:disabled{opacity:.6;cursor:wait}.hint{font-size:12px;color:var(--muted);line-height:1.5}.message{display:none;margin-top:16px;padding:12px;border-radius:9px;font-size:14px}.ok{display:block;background:#e7f8ef;color:#12643b}.err{display:block;background:#fff0f0;color:#a12222}.section{display:none}.section.active{display:block}
+    footer{text-align:center;font-size:12px;color:var(--muted);padding:16px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><h1>Internship Attendance</h1><p>Check in, check out and submit your daily work progress.</p></div>
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('attendance',this)">Attendance</button>
+      <button class="tab" onclick="showTab('report',this)">Daily Work Report</button>
+    </div>
+    <section id="attendance" class="section active">
+      <p class="hint">Enter your registered Student ID. The first submission each day records check-in; the next records check-out.</p>
+      <label for="attId">Student ID *</label><input id="attId" placeholder="e.g. INT001" autocomplete="off">
+      <button id="attBtn" class="primary" onclick="attendance()">Continue</button>
+      <div id="attMsg" class="message"></div>
+    </section>
+    <section id="report" class="section">
+      <p class="hint">Submit one report at the end of each working day. Use clear, specific details about the work you completed.</p>
+      <label>Student ID *</label><input id="reportId" placeholder="e.g. INT001" autocomplete="off">
+      <label>Tasks completed today *</label><textarea id="tasks" placeholder="Describe the work completed"></textarea>
+      <label>Technologies / tools used *</label><input id="tools" placeholder="e.g. Excel, HTML, Python">
+      <label>Problems faced</label><textarea id="problems" placeholder="Any issues or challenges"></textarea>
+      <label>Learning outcomes *</label><textarea id="learning" placeholder="What did you learn today?"></textarea>
+      <label>Work pending</label><textarea id="pending" placeholder="Tasks that are not yet completed"></textarea>
+      <label>Plan for next working day *</label><textarea id="nextPlan" placeholder="What will you work on next?"></textarea>
+      <button id="reportBtn" class="primary" onclick="report()">Submit Daily Work Report</button>
+      <div id="reportMsg" class="message"></div>
+    </section>
+  </div>
+  <footer>Internship Management System · Contact your supervisor if you enter the wrong details.</footer>
+</div>
+<script>
+function showTab(id,btn){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');btn.classList.add('active')}
+function setMsg(id,text,ok){const e=document.getElementById(id);e.textContent=text;e.className='message '+(ok?'ok':'err')}
+function attendance(){
+  const id=document.getElementById('attId').value.trim(), b=document.getElementById('attBtn');
+  if(!id){setMsg('attMsg','Please enter your Student ID.',false);return}
+  b.disabled=true;b.textContent='Submitting...';
+  google.script.run.withSuccessHandler(r=>{setMsg('attMsg',r.message+(r.time?(' Time: '+r.time):''),r.ok);b.disabled=false;b.textContent='Continue'}).withFailureHandler(()=>{setMsg('attMsg','Could not submit. Please try again or contact the supervisor.',false);b.disabled=false;b.textContent='Continue'}).submitAttendance(id);
+}
+function report(){
+  const p={studentId:document.getElementById('reportId').value.trim(),tasks:document.getElementById('tasks').value,tools:document.getElementById('tools').value,problems:document.getElementById('problems').value,learning:document.getElementById('learning').value,pending:document.getElementById('pending').value,nextPlan:document.getElementById('nextPlan').value};
+  const b=document.getElementById('reportBtn');
+  if(!p.studentId||!p.tasks.trim()||!p.tools.trim()||!p.learning.trim()||!p.nextPlan.trim()){setMsg('reportMsg','Please complete all required fields marked with *.',false);return}
+  b.disabled=true;b.textContent='Submitting...';
+  google.script.run.withSuccessHandler(r=>{setMsg('reportMsg',r.message,r.ok);b.disabled=false;b.textContent='Submit Daily Work Report';if(r.ok){['tasks','tools','problems','learning','pending','nextPlan'].forEach(id=>document.getElementById(id).value='')}}).withFailureHandler(()=>{setMsg('reportMsg','Could not submit. Please try again or contact the supervisor.',false);b.disabled=false;b.textContent='Submit Daily Work Report'}).submitDailyReport(p);
+}
+</script>
+</body>
+</html>
